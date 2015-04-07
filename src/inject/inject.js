@@ -402,21 +402,22 @@
 
 
 var dbg = (typeof console !== 'undefined') ? function(s) {
-    console.log("Readability: " + s);
+    // console.log("Readability: " + s);
+    console.log.apply(console, arguments);
 } : function() {};
 
-var info = (typeof console !== 'undefined') ? function(s) {
-    console.info("Readability: " + s);
+var info = (typeof console !== 'undefined') ? function() {
+    console.info.apply(console,  arguments);
 } : function() {};
 
 
 var readability = {
     version: '1.8.0',
-    iframeLoads: 0,
+    // iframeLoads: 0,
     convertLinksToFootnotes: true,
-    reversePageScroll: false,
+    // reversePageScroll: false,
     /* If they hold shift and hit space, scroll up */
-    frameHack: false,
+    // frameHack: false,
     /**
      * The frame hack is to workaround a firefox bug where if you
      * pull content out of a frame and stick it into the parent element, the scrollbar won't appear.
@@ -447,10 +448,10 @@ var readability = {
      **/
     regexps: {
         unlikelyCandidates: /combx|comment|community|disqus|extra|foot|header|menu|remark|rss|shoutbox|sidebar|sponsor|ad-break|agegate|pagination|pager|popup|tweet|twitter|aside|nocontent/i,
-        okMaybeItsACandidate: /and|article|body|column|main|shadow|canvas/i,
+        okMaybeItsACandidate: /and|article|body|column|main|shadow|canvas|svg/i,
         stripFromText: /img|a/i,
-        positive: /article|body|content|entry|hentry|main|page|pagination|post|text|blog|story|code/i,
-        negative: /combx|comment|com-|contact|header|foot|footer|footnote|masthead|media|meta|outbrain|promo|related|scroll|shoutbox|sidebar|sponsor|shopping|tags|tool|widget|nocontent/i,
+        positive: /article|body|content|entry|hentry|main|page|pagination|post|text|blog|story|code|svg|canvas/i,
+        negative: /combx|comment|com-|contact|header|foot|footer|footnote|masthead|meta|outbrain|promo|related|scroll|shoutbox|sidebar|sponsor|shopping|tags|tool|widget|nocontent|share|bookmark/i,
         extraneous: /print|archive|comment|discuss|e[\-]?mail|share|reply|all|login|sign|single/i,
         divToPElements: /<(a|blockquote|dl|div|img|ol|p|pre|table|ul)/i,
         replaceBrs: /(<br[^>]*>[ \n\r\t]*){2,}/gi,
@@ -481,8 +482,9 @@ var readability = {
         /**
          * Don't use this on root page (NOT UNIVERSAL)
          **/
-        if (/\b(google|facebook|twitter|quizlet)\b/i.test(window.document.location.hostname)) return null;
-        if (localStorage.getItem("lens-user-no-GH3UEgL6CbcpK4hNtQeR8Fc") === "n") return null;
+        if (/\b(google|facebook|twitter|quizlet|dropbox)\b/i.test(window.document.location.hostname)) return null;
+        if (localStorage.getItem("lens-user-never-again-GH3UEgL6CbcpK4hNtQeR8Fc") === "n") return null;
+
         // readability.flags = localStorage.getItem("lens-flag-GH3UEgL6CbcpK4hNtQeR8Fc") || readability.flags;
         // don't use on forums
         var linksOnSameDomain = function(query){
@@ -531,7 +533,7 @@ var readability = {
         /* Pull out any possible next page link first */
         var nextPageLink = readability.findNextPageLink(readability.bodyCache);
         readability.nextPageLink = nextPageLink;
-        // var articleTools = readability.getArticleTools();
+        var articleTools = readability.getArticleTools();
         var articleTitle = readability.getArticleTitle();
         var articleContent = readability.grabArticle(readability.bodyCache);
         if (!articleContent) {
@@ -552,11 +554,11 @@ var readability = {
         /* Build readability's DOM tree */
         var style = document.createElement("STYLE");
         style.type = "text/css";
-        // styleText = document.createTextNode('body {margin: 0px; padding: 0px; background-color: transparent; /*opt*/background-color: rgba(0, 0, 0, 0.8); -webkit-user-select: none; text-align: -webkit-center; } body, td, input, select, textarea, button {color: hsl(273, 10%, 20%); } h1 {font-size: 1.25em; } h2 {font-size: 1.125em; } h3 {font-size: 1.05em; } a {text-decoration: none; color: #35C; } a:hover {text-decoration: underline; background-color: #fafafa; } blockquote {border-left: 5px solid #eaeef1; color: #555; margin-left: 0px; margin-right: 0px; padding: 0px 20px; } hr {height: 0px; border: none; border-top: 1px solid #ddd; } br {clear: left; } #article.rtl blockquote {border-left: none; border-right: 5px solid #F1F1F1; } #articleContainer {/*opt*/position: absolute; /*opt*/left: 50%; width: 70%; height: 100%; /*opt*/margin-left: -431px; overflow: auto; text-align: left; } #article {display: inline-block; width: 100%; font: 19px Georgia, Times, "Times New Roman", serif; line-height: 160%; /*opt*/text-align: justify; /*opt*/margin: 20px 12px 20px 34px; /*opt*/margin: 20px 0px; /*opt*/padding: 45px 70px; } #article.rtl {direction: rtl; text-align: right; } .page {/*opt*/display: inline-block; border: 1px solid #C3C3C3; background-color: #fdfdfd; /*opt*/padding: 45px 70px; margin: 12px 12px 0px 23px; -webkit-user-select: auto; /*-webkit-box-shadow: rgba(0, 0, 0, 0.4) 0px 0px 40px;*/; } .page:first-of-type {margin-top: 20px; } .page:last-of-type {margin-bottom: 20px; } .page .pageNumber {font: bold 0.7em Helvetica, sans-serif; margin-left: 12px; color: #fff; background-color: #9f809d; border-radius: 5px 0px 0px 5px; float: right; margin: 10px -1px; padding: 5px 10px; cursor: default; -webkit-user-select: none; } .page .contentWrapper {padding: 45px 70px; } .page:first-of-type:not(:last-of-type) .contentWrapper {padding-bottom: 15px; } .page:last-of-type:not(:first-of-type) .contentWrapper {padding-top: 15px; } .page:not(:first-of-type):not(:last-of-type) .contentWrapper {padding-top: 15px; padding-bottom: 15px; } .page table {font-size: 0.9em; text-align: left; } .page.rtl table {text-align: right; } #title {display: none; font-weight: bold; font-size: 1.33em; line-height: 1.25em; margin-bottom: 1.5em; /*opt*/padding: 45px 70px; /*opt*/padding-bottom: 0px; } .page:first-of-type #title {display: block; } .content * {word-wrap: break-word; } .content pre, .content xmp, .content plaintext, .content listing {/*opt*/white-space: normal; } .content pre, .content code {border: 1px dashed #d3c8cf; border-left: 5px solid #f5edf2; padding: 5px 5px 5px 10px; } .content img {float: left; margin: 12px 12px 12px 0px; max-width: 100%; height: auto; } .content.disableImages img {display: none !important; } .content img.tinyImage {float: none; margin: 0; } .content img.largeImage {float: none; margin: 1em auto; display: block; clear: both; /*-webkit-box-shadow: rgba(0, 0, 0, 0.05) 0px 0px 20px;*/; } .content a img {border: none; } .content .float {margin: 8px 0; font-size: 70%; line-height: 1.4; text-align: left; } #article.rtl .content .float {text-align: right; } .content .float.left {float: left; margin-right: 20px; } .content .float.right {float: right; margin-left: 20px !important; } .content .float.full-width {float: none; display: block; } .footer {display: none; direction: ltr; text-align: left; margin-top: 2em; clear: both; } .page:last-of-type .footer {/*opt*/display: block; } .footer table {/*opt*/border: solid 1px #ddd; border-radius: 30px; border-spacing: 0px; border-collapse: collapse; text-shadow: white 1px 1px 1px; /*-webkit-box-shadow: #DDD 0px 1px 2px;*/ background: -webkit-gradient(linear, left top, left bottom, color-stop(0, #fff), color-stop(0.04, #f9f9f9), color-stop(0.98, #f0f0f0), color-stop(1, #eee)); } .footer td {color: #999; padding: 0px 13px; vertical-align: middle; font-family: MyriadPro-Semibold, Tahoma, Verdana, sans-serif; font-size: 15px; font-weight: bold; } .footer img {vertical-align: middle; padding-right: 5px; margin: -3px 0px -4px 0px; height: 32px; width: 32px; opacity: 0.7; max-width: none; } .articleInfo {display: none; direction: ltr; background: #fafafa; text-align: center; margin-top: 2em; padding-left: 15px; border: solid 4px #eee; border-left: solid 1px #eee; border-right: none; page-break-inside: avoid; /*-webkit-box-shadow: #ddd 0px 0px 3px;*/; } .articleInfo table, .articleInfo td {border-spacing: 0px; border-collapse: collapse; margin: 0px; padding: 0px; } .articleInfo .url {font-family: monospace; font-size: 1.1em; /*opt*/font-weight: bold; word-break: break-all; position: relative; z-index: 100; } .articleInfo .url .code {letter-spacing: 2px; } .articleInfo img {vertical-align: middle; } .articleInfo img.icon {margin-right: 10px; } .articleInfo img.favicon {border: solid 1px #ddd; } .articleInfo img.qr {border: solid 1px #eee; border-top: none; border-bottom: none; } .articleInfo .website {display: inline-block; } .loader {display: none; text-align: center; margin-bottom: 20px; } .page:last-of-type .loader {display: block; } #controls {position: fixed; bottom: 30px; width: 558px; left: 50%; margin-left: -304px; /* width / 2 - padding-left */ padding: 15px 25px; background-color: rgba(0, 0, 0, 0.75); border-radius: 12px; opacity: 0; z-index: 100; -webkit-transition: opacity 1.25s; } #controls.visible {opacity: 1; -webkit-transition: opacity 1s; } #controls img {vertical-align: middle; float: left; margin-right: 12px; cursor: pointer; opacity: 0.8; } #controls img:hover {opacity: 1; } #controls img.newGroup {margin-left: 15px; } #controls img:first-of-type {margin-left: 5px; } #controls img:last-of-type {margin-right: 0px; } #nextPageFrame {position: absolute; display: none; } ::-webkit-scrollbar:horizontal, ::-webkit-scrollbar-track:disabled {display: none; } ::-webkit-scrollbar-thumb {-webkit-border-image: url("chrome-extension://__MSG_@@extension_id__/assets/images/scrollbar-thumb.png") 19 0 19 0; border-width: 19px 0; min-height: 40px; } ::-webkit-scrollbar-track {margin-top: 20px; margin-bottom: 20px; -webkit-border-image: url("chrome-extension://__MSG_@@extension_id__/assets/images/scrollbar-track.png") 21 0 21 0; border-width: 21px 0; } ::-webkit-scrollbar {width: 21px; } @media print {body {background: #fff !important; } #controls, .footer, .loader {display: none !important; } #articleContainer {width: auto !important; height: auto !important; } #article, .page, .contentWrapper {border: none; margin: 0px !important; padding: 0px !important; font-size: 12pt; } .page {background: #fff !important; } .page, a:link, a:visited {color: #000 !important; } a:link, a:visited {color: #520 !important; background: transparent; /*opt*/text-decoration: underline; } .content a:link:after, .content a:visited:after {/*opt*/content: " (" attr(href) ") "; font-size: 80%; color: #853 !important; } .page:last-of-type .articleInfo {display: block !important; } .page .pageNumber {float: none; background: #fafafa; color: #000; border: solid 2px #eee; border-left: none; border-right: none; border-radius: 0px; margin-top: 15px; margin-bottom: 15px; }; }');
-        styleText = document.createTextNode('img {max-width: 100% !important; } body, td, input, select, textarea, button {color: hsl(273, 10%, 20%) !important; } h1 {font-size: 1.25em !important; } h2 {font-size: 1.125em !important; } h3 {font-size: 1.05em !important; } a {text-decoration: none !important; color: #35C !important; } a:hover {text-decoration: underline !important; background-color: #fafafa !important; } blockquote {border-left: 5px solid #eaeef1 !important; color: #555 !important; margin-left: 0px !important; margin-right: 0px !important; padding: 0px 20px !important; } hr {height: 0px !important; border: none !important; border-top: 1px solid #ddd !important; } br {clear: left !important; } #article {display: inline-block !important; font: 19px Georgia, Times, "Times New Roman", serif !important; line-height: 160% !important; text-align: justify !important; text-shadow: none !important; } #article.rtl {direction: rtl !important; text-align: right !important; } .page {display: inline-block !important; border: 1px solid #C3C3C3 !important; background-color: #fdfdfd !important; padding: 45px 70px !important; margin: 12px 12px 0px 12px !important; -webkit-user-select: auto !important; } .page:first-of-type {margin-top: 20px !important; } .page:last-of-type {margin-bottom: 20px !important; } .page table {font-size: 0.9em !important; text-align: left !important; } .page.rtl table {text-align: right !important; } #title {display: none !important; font-weight: bold !important; font-size: 1.33em !important; line-height: 1.25em !important; margin-bottom: 1.5em !important; /*opt*/ padding: 45px 70px !important; /*opt*/ padding-bottom: 0px !important; } .page:first-of-type #title {display: block !important; } .content {word-wrap: break-word !important; } .content pre, .content xmp, .content plaintext, .content listing {/*opt*/ white-space: normal !important; } .content pre, .content code {border: 1px dashed #d3c8cf !important; border-left: 5px solid #f5edf2 !important; padding: 5px 5px 5px 10px !important; } .content img {float: left !important; margin: 12px 12px 12px 0px !important; max-width: 100% !important; height: auto !important; } .content.disableImages img {display: none  !important; } .content img.tinyImage {float: none !important; margin: 0 !important; } .content img.largeImage {float: none !important; margin: 1em auto !important; display: block !important; clear: both !important; } .content a img {border: none !important; } .content .float {margin: 8px 0 !important; font-size: 70% !important; line-height: 1.4 !important; text-align: left !important; } #article.rtl .content .float {text-align: right !important; } .content .float.left {float: left !important; margin-right: 20px !important; } .content .float.right {float: right !important; margin-left: 20px  !important; } .content .float.full-width {float: none !important; display: block !important; } ::-webkit-scrollbar:horizontal, ::-webkit-scrollbar-track:disabled {display: none !important; } ::-webkit-scrollbar-thumb {-webkit-border-image: url("http://i.imgur.com/JiF4KuF.png") 19 0 19 0 !important; border-width: 19px 0 !important; min-height: 40px !important; } ::-webkit-scrollbar-track {margin-top: 20px !important; margin-bottom: 20px !important; -webkit-border-image: url("http://i.imgur.com/wLYCOTH.png") 21 0 21 0 !important; border-width: 21px 0 !important; } ::-webkit-scrollbar {width: 21px !important; } @media print {body {background: #fff  !important; } #controls, .footer, .loader {display: none  !important; } #articleContainer {width: auto  !important; height: auto  !important; } #article, .page, .contentWrapper {border: none !important; margin: 0px  !important; padding: 0px  !important; font-size: 12pt !important; } .page {background: #fff  !important; } .page, a:link, a:visited {color: #000  !important; } a:link, a:visited {color: #520  !important; background: transparent !important; /*opt*/ text-decoration: underline !important; } .content a:link:after, .content a:visited:after {/*opt*/ content: " (" attr(href) ") " !important; font-size: 80% !important; color: #853  !important; } .page:last-of-type .articleInfo {display: block  !important; } .page .pageNumber {float: none !important; background: #fafafa !important; color: #000 !important; border: solid 2px #eee !important; border-left: none !important; border-right: none !important; border-radius: 0px !important; margin-top: 15px !important; margin-bottom: 15px !important; } }');
+        styleText = document.createTextNode('img {max-width: 100% !important; } body, td, input, select, textarea, button {color: hsl(273, 10%, 20%) !important; } h1 {font-size: 1.25em !important; } h2 {font-size: 1.125em !important; } h3 {font-size: 1.05em !important; } a {text-decoration: none !important; color: #35C !important; } a:hover {text-decoration: underline !important; background-color: #fafafa !important; } blockquote {border-left: 5px solid #eaeef1 !important; color: #555 !important; margin-left: 0px !important; margin-right: 0px !important; padding: 0px 20px !important; } hr {height: 0px !important; border: none !important; border-top: 1px solid #ddd !important; } br {clear: left !important; } #article {display: inline-block !important; font: 19px Georgia, Times, "Times New Roman", serif !important; line-height: 160% !important; text-align: justify !important; text-shadow: none !important; } #article.rtl {direction: rtl !important; text-align: right !important; } .page {border: 1px solid #C3C3C3 !important; background-color: #fdfdfd !important; padding: 45px 70px !important; margin: 12px 12px 0px 12px !important; -webkit-user-select: auto !important; } .page:first-of-type {margin-top: 20px !important; } .page:last-of-type {margin-bottom: 20px !important; } .page table {font-size: 0.9em !important; text-align: left !important; } .page.rtl table {text-align: right !important; } #title {display: none !important; font-weight: bold !important; font-size: 1.33em !important; line-height: 1.25em !important; margin-bottom: 1.5em !important; /*opt*/ padding: 45px 70px !important; /*opt*/ padding-bottom: 0px !important; } .page:first-of-type #title {display: block !important; } .content {word-wrap: break-word !important; } .content pre, .content xmp, .content plaintext, .content listing {/*opt*/ white-space: normal !important; } .content pre, .content code {border: 1px dashed #d3c8cf !important; border-left: 5px solid #f5edf2 !important; padding: 5px 5px 5px 10px !important; } .content img {float: left !important; margin: 12px 12px 12px 0px !important; max-width: 100% !important; height: auto !important; } .content.disableImages img {display: none  !important; } .content img.tinyImage {float: none !important; margin: 0 !important; } .content img.largeImage {float: none !important; margin: 1em auto !important; display: block !important; clear: both !important; } .content a img {border: none !important; } .content .float {margin: 8px 0 !important; font-size: 70% !important; line-height: 1.4 !important; text-align: left !important; } #article.rtl .content .float {text-align: right !important; } .content .float.left {float: left !important; margin-right: 20px !important; } .content .float.right {float: right !important; margin-left: 20px  !important; } .content .float.full-width {float: none !important; display: block !important; } ::-webkit-scrollbar:horizontal, ::-webkit-scrollbar-track:disabled {display: none !important; } ::-webkit-scrollbar-thumb {-webkit-border-image: url("https://i.imgur.com/JiF4KuF.png") 19 0 19 0 !important; border-width: 19px 0 !important; min-height: 40px !important; } ::-webkit-scrollbar-track {margin-top: 20px !important; margin-bottom: 20px !important; -webkit-border-image: url("https://i.imgur.com/wLYCOTH.png") 21 0 21 0 !important; border-width: 21px 0 !important; } ::-webkit-scrollbar {width: 21px !important; } @media print {body {background: #fff  !important; } #controls, .footer, .loader {display: none  !important; } #articleContainer {width: auto  !important; height: auto  !important; } #article, .page, .contentWrapper {border: none !important; margin: 0px  !important; padding: 0px  !important; font-size: 12pt !important; } .page {background: #fff  !important; } .page, a:link, a:visited {color: #000  !important; } a:link, a:visited {color: #520  !important; background: transparent !important; /*opt*/ text-decoration: underline !important; } .content a:link:after, .content a:visited:after {/*opt*/ content: " (" attr(href) ") " !important; font-size: 80% !important; color: #853  !important; } .page:last-of-type .articleInfo {display: block  !important; } .page .pageNumber {float: none !important; background: #fafafa !important; color: #000 !important; border: solid 2px #eee !important; border-left: none !important; border-right: none !important; border-radius: 0px !important; margin-top: 15px !important; margin-bottom: 15px !important; } }');
         style.appendChild(styleText);
         var body = document.createElement("DIV");
         body.id = "article";
+        body.appendChild(articleTools);
 
 
         // /* Apply user-selected styling */
@@ -621,7 +623,7 @@ var readability = {
             //  *
             window.setTimeout(function() {
                 readability.appendNextPage(nextPageLink);
-            }, 1000);
+            }, 500);
         }
 
         // /** Smooth scrolling **/
@@ -699,13 +701,7 @@ var readability = {
      **/
     getArticleTools: function() {
         var articleTools = document.createElement("DIV");
-        // document.restoreBody = function(){
-        //     readability.dom.innerHTML = (readability.shadowCache)? readability.shadowCache: "<content></content>";
-        // }
-
-        articleTools.innerHTML =
-            "<a href='#' onclick='document.restoreBody();' title='Reload original page' id='reload-page'>Reload Original Page</a>" +
-            "<a href='#' onclick='javascript:window.print();' title='Print page' id='print-page'>Print Page</a>";
+        articleTools.innerHTML = "";
 
         return articleTools;
     },
@@ -823,68 +819,6 @@ var readability = {
                 dbg(e);
             }
         }
-
-        // document.body.id = "readabilityBody";
-
-        // var frames = document.getElementsByTagName('frame');
-        // if (frames.length > 0) {
-        //     var bestFrame = null;
-        //     var bestFrameSize = 0; /* The frame to try to run readability upon. Must be on same domain. */
-        //     var biggestFrameSize = 0; /* Used for the error message. Can be on any domain. */
-        //     for (var frameIndex = 0; frameIndex < frames.length; frameIndex += 1) {
-        //         var frameSize = frames[frameIndex].offsetWidth + frames[frameIndex].offsetHeight;
-        //         var canAccessFrame = false;
-        //         try {
-        //             var frameBody = frames[frameIndex].contentWindow.document.body;
-        //             canAccessFrame = true;
-        //         } catch (eFrames) {
-        //             dbg(eFrames);
-        //         }
-
-        //         if (frameSize > biggestFrameSize) {
-        //             biggestFrameSize = frameSize;
-        //             readability.biggestFrame = frames[frameIndex];
-        //         }
-
-        //         if (canAccessFrame && frameSize > bestFrameSize) {
-        //             readability.frameHack = true;
-
-        //             bestFrame = frames[frameIndex];
-        //             bestFrameSize = frameSize;
-        //         }
-        //     }
-
-        //     if (bestFrame) {
-        //         var newBody = document.createElement('body');
-        //         newBody.innerHTML = bestFrame.contentWindow.document.body.innerHTML;
-        //         newBody.style.overflow = 'scroll';
-        //         document.body = newBody;
-
-        //         var frameset = document.getElementsByTagName('frameset')[0];
-        //         if (frameset) {
-        //             frameset.parentNode.removeChild(frameset);
-        //         }
-        //     }
-        // }
-
-
-        // /* Remove all stylesheets */
-        // for (var k=0;k < document.styleSheets.length; k+=1) {
-        //     if (document.styleSheets[k].href !== null && document.styleSheets[k].href.lastIndexOf("readability") === -1) {
-        //         document.styleSheets[k].disabled = true;
-        //     }
-        // }
-
-        // /* Remove all style tags in head (not doing this on IE) - TODO: Why not? */
-        // var styleTags = document.getElementsByTagName("style");
-        // for (var st=0;st < styleTags.length; st+=1) {
-        //     styleTags[st].textContent = "";
-        // }
-
-        // /* Turn all double br's into p's */
-        // /* Note, this is pretty costly as far as processing goes. Maybe optimize later. */
-        // document.body.innerHTML = document.body.innerHTML.replace(readability.regexps.replaceBrs, '</p><p>').replace(readability.regexps.replaceFonts, '<$1span>');
-
     },
 
     /**
@@ -1191,7 +1125,8 @@ var readability = {
         for (var nodeIndex = 0; (node = allElements[nodeIndex]); nodeIndex += 1) {
             /* Remove unlikely candidates */
             if (stripUnlikelyCandidates) {
-                var unlikelyMatchString = node.className + node.id;
+                var unlikelyMatchString = node.className +" "+ node.id ;
+                // class/id in unlikelyCandidates  but not in okMaybeItsACandidate
                 if (
                     unlikelyMatchString.search(readability.regexps.unlikelyCandidates) !== -1 &&
                     unlikelyMatchString.search(readability.regexps.okMaybeItsACandidate) === -1 &&
@@ -1239,8 +1174,15 @@ var readability = {
             }
         }
 
-        var beforeText = readability.getLargestContent(page);
-        var beforeLength = beforeText.length;
+        var beforeLength = 0;
+        [].slice.call(page.querySelectorAll("p,td,pre")).forEach(function(el){
+            beforeLength += el.textContent.length;
+        });
+        if (beforeLength< 300) {
+            info("beforeLength is smaller than 300, stopping");
+            info(beforeLength);
+            return;
+        }
         /**
          * Loop through all paragraphs, and assign a score to them based on how content-y they look.
          * Then add their score to their parent node.
@@ -1426,26 +1368,13 @@ var readability = {
          * finding the -right- content.
          **/
 
-        var afterText = readability.getLargestContent(articleContent);
-        var afterLength = afterText.length;
-        // articleContent.textContent.split(/[\n\t]{3,}/).forEach(function(el){
-        //     if (el.length > afterLength){
-        //         afterText = el;
-        //         afterLength = el.length;
-        //     }
-        // });
-        if (afterLength/beforeLength < 0.95){
-            info("BEFORE:");
-            info(beforeText);
-            info("AFTER:");
-            info(afterText);
-            // info("AFTER AFter");
-            // info(articleContent.textContent);
-
-        }
+        var afterLength = 0;
+        [].slice.call(articleContent.querySelectorAll("p,td,pre")).forEach(function(el){
+            afterLength += el.textContent.length;
+        });
         info("Article before, after, ratio: "+ beforeLength + ", " + afterLength + ", " + afterLength/beforeLength);
 
-        if (afterLength < 250 || afterLength/beforeLength < 0.7) {
+        if (afterLength < 250 || afterLength/beforeLength < 0.65) {
             page.innerHTML = pageCacheHtml;
             // if (readability.flagIsActive(readability.FLAG_STRIP_UNLIKELYS)) {
             //     readability.removeFlag(readability.FLAG_STRIP_UNLIKELYS);
@@ -1917,9 +1846,9 @@ var readability = {
         var articlePage = document.createElement("DIV");
         articlePage.id = 'readability-page-' + readability.curPageNum;
         articlePage.className = 'page';
-        articlePage.innerHTML = '<div><p class="page-separator" title="Page ' + readability.curPageNum + '">&sect;</p>';
+        articlePage.innerHTML = '<div><p class="page-separator" title="Page ' + readability.curPageNum + '"></p>';
 
-        readability["readability-content"].appendChild(articlePage);
+        readability["readability-content"].insertBefore(articlePage, readability["readability-content"].lastChild);
 
 
         if (readability.curPageNum > readability.maxPages) {
@@ -1950,7 +1879,7 @@ var readability = {
                     }
 
                     // TODO: this ends up doubling up page numbers on NYTimes articles. Need to generically parse those away.
-                    var page = document.createElement("DIV");
+                    var html = document.createElement("HTML");
 
                     /**
                      * Do some preprocessing to our HTML to make it ready for appending.
@@ -1959,8 +1888,8 @@ var readability = {
                      * • Turn all double br's into p's - was handled by prepDocument in the original view.
                      *   Maybe in the future abstract out prepDocument to work for both the original document and AJAX-added pages.
                      **/
-
-                    page.innerHTML = responseHtml;
+                    html.innerHTML = r.responseText;
+                    var page = html.querySelector("body");
 
                     /**
                      * Reset all flags for the next page, as they will search through it and disable as necessary at the end of grabArticle.
@@ -1970,6 +1899,9 @@ var readability = {
 
                     var nextPageLink = readability.findNextPageLink(page),
                         content = readability.grabArticle(page);
+                    info("Content");
+                    info(content);
+
                     readability.nextPageLink = nextPageLink;
 
                     if (!content) {
@@ -2087,7 +2019,7 @@ var readability = {
      **/
     clean: function(e, tag) {
         var targetList = e.getElementsByTagName(tag);
-        var isEmbed = (tag === 'object' || tag === 'embed');
+        var isEmbed = (tag === 'object' || tag === 'embed' || tag === 'iframe');
 
         for (var y = targetList.length - 1; y >= 0; y -= 1) {
             /* Allow youtube and vimeo videos through as people usually want to see those. */

@@ -1,9 +1,9 @@
 {
-  "name": "Lens",
-  "version": "0.0.2",
+  "name": "Lens Alpha",
+  "version": "0.0.3",
   "manifest_version": 2,
   "description": "Read the web through a distraction free lens",
-  "homepage_url": "http://lens.github.io",
+  "homepage_url": "https://github.com/hsingh23/lens",
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
