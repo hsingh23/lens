@@ -1,6 +1,6 @@
 {
-  "name": "Lens Alpha",
-  "version": "0.0.3",
+  "name": "Lens Beta",
+  "version": "1.0.9",
   "manifest_version": 2,
   "description": "Read the web through a distraction free lens",
   "homepage_url": "https://github.com/hsingh23/lens",
@@ -11,28 +11,30 @@
   },
   "default_locale": "en",
   "options_page": "src/options_custom/index.html",
-  "page_action": {
-    "default_icon": "icons/icon19.png",
-    "default_title": "page action demo",
-    "default_popup": "src/page_action/page_action.html"
+  "browser_action": {
+    "default_icon": {
+      "19": "icons/icon19.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
   },
   "permissions": [
-    "http://*/*", "https://*/*"
+    "activeTab",
+    "storage"
   ],
   "content_scripts": [
     {
       "matches": [
-        "http://*/*", "https://*/*"
-      ],
-      "css": [
-        "src/inject/inject.css"
+        "http://*/*",
+        "https://*/*"
       ],
       "js": [
+        "src/inject/pico-modal.js",
         "src/inject/inject.js"
       ]
     }
   ],
   "web_accessible_resources": [
-    "assets/images/*"
+    "*"
   ]
 }

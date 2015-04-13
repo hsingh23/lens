@@ -1,3 +1,47 @@
+.lensLink {
+    box-sizing: border-box;
+    color: rgba(0, 0, 0, 0.439216);
+    cursor: pointer;
+    display: inline-block;
+    height: 38px;
+    letter-spacing: -0.280000001192093px;
+    position: relative;
+    text-align: center;
+    text-decoration: none;
+    text-rendering: optimizeLegibility;
+    vertical-align: middle;
+    white-space: nowrap;
+    -webkit-perspective-origin: 50% 50%;
+    -moz-perspective-origin: 50% 50%;
+    -o-perspective-origin: 50% 50%;
+    perspective-origin: 50% 50%;
+    -webkit-transform-origin: 50% 50%;
+    -moz-transform-origin: 50% 50%;
+    -o-transform-origin: 50% 50%;
+    -ms-transform-origin: 50% 50%;
+    transform-origin: 50% 50%;
+    border: 1px solid rgba(0, 0, 0, 0.14902);
+    border-radius: 13986px 13986px 13986px 13986px;
+    font: normal normal normal normal 14px/37px 'Lucida Grande', 'Lucida Sans Unicode', 'Lucida Sans', Geneva, Verdana, sans-serif;
+    margin: 0 8px 0 0;
+    outline: rgba(0, 0, 0, 0.439216) none 0;
+    padding: 0 16px;
+    transition: border-color 0.1s ease 0s, color 0.1s ease 0s;
+}
+
+.tools{
+  padding: 10px 10px;
+  padding-bottom: 0;
+}
+
+.lensLink:focus, .lensLink:active, .lensLink:hover {
+    color: rgba(0,0,0,0.6);
+    border-color: rgba(0,0,0,0.3);
+}
+
+img {
+  max-width: 100%;
+}
 
 body, td, input, select, textarea, button {
   color: hsl(273, 10%, 20%);
@@ -28,9 +72,9 @@ a:hover {
 blockquote {
   border-left: 5px solid #eaeef1;
   color: #555;
-  margin-left: 0px;
-  margin-right: 0px;
-  padding: 0px 20px;
+  margin-left: 0;
+  margin-right: 0;
+  padding: 0 20px;
 }
 
 hr {
@@ -48,6 +92,7 @@ br {
   font: 19px Georgia, Times, "Times New Roman", serif;
   line-height: 160%;
   text-align: justify;
+  text-shadow: none;
 }
 
 #article.rtl {
@@ -56,11 +101,10 @@ br {
 }
 
 .page {
-  display: inline-block;
   border: 1px solid #C3C3C3;
   background-color: #fdfdfd;
   padding: 45px 70px;
-  margin: 12px 12px 0px 12px;
+  margin: 12px 12px 0 12px;
   -webkit-user-select: auto;
 }
 
@@ -87,8 +131,8 @@ br {
   font-size: 1.33em;
   line-height: 1.25em;
   margin-bottom: 1.5em;
-  /*opt*/padding: 45px 70px;
-  /*opt*/padding-bottom: 0px;
+  padding: 45px 70px;
+  padding-bottom: 0;
 }
 
 .page:first-of-type #title {
@@ -100,7 +144,7 @@ br {
 }
 
 .content pre, .content xmp, .content plaintext, .content listing {
-  /*opt*/white-space: normal;
+  white-space: normal;
 }
 
 .content pre, .content code {
@@ -120,12 +164,12 @@ br {
   display: none !important;
 }
 
-.content img.tinyImage {
+.content .tinyImage {
   float: none;
   margin: 0;
 }
 
-.content img.largeImage {
+.content .largeImage {
   float: none;
   margin: 1em auto;
   display: block;
@@ -169,15 +213,17 @@ br {
 }
 
 ::-webkit-scrollbar-thumb {
-  -webkit-border-image: url("http://i.imgur.com/JiF4KuF.png") 19 0 19 0;
+  -webkit-border-image: url("https://i.imgur.com/JiF4KuF.png") 19 0 19 0;
+  /*-webkit-border-image: url('chrome-extension://__MSG_@@extension_id__/assets/images/scrollbar-thumb.png') 19 0 19 0;*/
   border-width: 19px 0;
   min-height: 40px;
 }
 
 ::-webkit-scrollbar-track {
-  margin-top: 20px;
-  margin-bottom: 20px;
-  -webkit-border-image: url("http://i.imgur.com/wLYCOTH.png") 21 0 21 0;
+  margin-top: 20;
+  margin-bottom: 20;
+  -webkit-border-image: url("https://i.imgur.com/wLYCOTH.png") 21 0 21 0;
+  /*-webkit-border-image: url('chrome-extension://__MSG_@@extension_id__/assets/images/scrollbar-track.png') 21 0 21 0;*/
   border-width: 21px 0;
 }
 
@@ -201,8 +247,8 @@ br {
 
   #article, .page, .contentWrapper {
     border: none;
-    margin: 0px !important;
-    padding: 0px !important;
+    margin: 0 ;
+    padding: 0 ;
     font-size: 12pt;
   }
 
@@ -217,7 +263,7 @@ br {
   a:link, a:visited {
     color: #520 !important;
     background: transparent;
-    /*opt*/text-decoration: underline;
+    text-decoration: underline;
   }
 
   .content a:link:after, .content a:visited:after {
@@ -240,5 +286,5 @@ br {
     border-radius: 0px;
     margin-top: 15px;
     margin-bottom: 15px;
-  };
+  }
 }

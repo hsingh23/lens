@@ -9,424 +9,24 @@
 // @noframe
 // ==/UserScript==
 
-// PICO MODAL
-(function(window, document) {
-    "use strict";
-
-    /** Returns whether a value is a dom node */
-    function isNode(value) {
-        if ( typeof Node === "object" ) {
-            return value instanceof Node;
-        }
-        else {
-            return value &&
-                typeof value === "object" &&
-                typeof value.nodeType === "number";
-        }
-    }
-
-    /** Returns whether a value is a string */
-    function isString(value) {
-        return typeof value === "string";
-    }
-
-    /**
-     * Generates observable objects that can be watched and triggered
-     */
-    function observable() {
-        var callbacks = [];
-        return {
-            watch: callbacks.push.bind(callbacks),
-            trigger: function( modal ) {
-
-                var unprevented = true;
-                var event = {
-                    preventDefault: function preventDefault () {
-                        unprevented = false;
-                    }
-                };
-
-                for (var i = 0; i < callbacks.length; i++) {
-                    callbacks[i](modal, event);
-                }
-
-                return unprevented;
-            }
-        };
-    }
-
-
-    /**
-     * A small interface for creating and managing a dom element
-     */
-    function Elem( elem ) {
-        this.elem = elem;
-    }
-
-    /**
-     * Creates a new div
-     */
-    Elem.div = function ( parent ) {
-        var elem = document.createElement('div');
-        (parent || document.body).appendChild(elem);
-        return new Elem(elem);
-    };
-
-    Elem.prototype = {
-
-        /** Creates a child of this node */
-        child: function () {
-            return Elem.div(this.elem);
-        },
-
-        /** Applies a set of styles to an element */
-        stylize: function(styles) {
-            styles = styles || {};
-
-            if ( typeof styles.opacity !== "undefined" ) {
-                styles.filter =
-                    "alpha(opacity=" + (styles.opacity * 100) + ")";
-            }
-
-            for (var prop in styles) {
-                if (styles.hasOwnProperty(prop)) {
-                    this.elem.style[prop] = styles[prop];
-                }
-            }
-
-            return this;
-        },
-
-        /** Adds a class name */
-        clazz: function (clazz) {
-            this.elem.className += " " + clazz;
-            return this;
-        },
-
-        /** Sets the HTML */
-        html: function (content) {
-            if ( isNode(content) ) {
-                this.elem.appendChild( content );
-            }
-            else {
-                this.elem.innerHTML = content;
-            }
-            return this;
-        },
-
-        /** Adds a click handler to this element */
-        onClick: function(callback) {
-            this.elem.addEventListener('click', callback);
-            return this;
-        },
-
-        /** Removes this element from the DOM */
-        destroy: function() {
-            document.body.removeChild(this.elem);
-        },
-
-        /** Hides this element */
-        hide: function() {
-            this.elem.style.display = "none";
-        },
-
-        /** Shows this element */
-        show: function() {
-            this.elem.style.display = "block";
-        },
-
-        /** Sets an attribute on this element */
-        attr: function ( name, value ) {
-            this.elem.setAttribute(name, value);
-            return this;
-        },
-
-        /** Executes a callback on all the ancestors of an element */
-        anyAncestor: function ( predicate ) {
-            var elem = this.elem;
-            while ( elem ) {
-                if ( predicate( new Elem(elem) ) ) {
-                    return true;
-                }
-                else {
-                    elem = elem.parentNode;
-                }
-            }
-            return false;
-        }
-    };
-
-
-    /** Generates the grey-out effect */
-    function buildOverlay( getOption, close ) {
-        return Elem.div()
-            .clazz("pico-overlay")
-            .clazz( getOption("overlayClass", "") )
-            .stylize({
-                display: "block",
-                position: "fixed",
-                top: "0px",
-                left: "0px",
-                height: "100%",
-                width: "100%",
-                visibility: "visible",
-                zIndex: "2000000000"
-            })
-            .stylize(getOption('overlayStyles', {
-                opacity: 0.5,
-                background: "#000"
-            }))
-            .onClick(function () {
-                if ( getOption('overlayClose', true) ) {
-                    close();
-                }
-            });
-    }
-
-    /** Builds the content of a modal */
-    function buildModal( getOption, close ) {
-        var width = getOption('width', '85%');
-        if ( typeof width === "number" ) {
-            width = "" + width + "px";
-        }
-
-        var elem = Elem.div()
-            .clazz("pico-content")
-            .clazz( getOption("modalClass", "") )
-            .stylize({
-                display: 'block',
-                position: 'fixed',
-                height: "calc(100% - 10px)",
-                overflow: "auto",
-                visibility: "visible",
-                zIndex: "9000000000",
-                left: "50%",
-                top: "0",
-                width: width,
-                '-ms-transform': 'translateX(-50%)',
-                '-moz-transform': 'translateX(-50%)',
-                '-webkit-transform': 'translateX(-50%)',
-                '-o-transform': 'translateX(-50%)',
-                'transform': 'translateX(-50%)'
-            })
-            .stylize(getOption('modalStyles', {
-                backgroundColor: "white",
-                borderRadius: "5px"
-            }))
-            .html( getOption('content') )
-            .attr("role", "dialog")
-            .onClick(function (event) {
-                var isCloseClick = new Elem(event.target)
-                    .anyAncestor(function (elem) {
-                        return (/\bpico-close\b/).test(elem.elem.className);
-                    });
-                if ( isCloseClick ) {
-                    close();
-                }
-            });
-
-        return elem;
-    }
-
-    /** Builds the close button */
-    function buildClose ( elem, getOption ) {
-        if ( getOption('closeButton', true) ) {
-            return elem.child()
-                .html( getOption('closeHtml', "&#xD7;") )
-                .clazz("pico-close")
-                .clazz( getOption("closeClass") )
-                .stylize( getOption('closeStyles', {
-                    borderRadius: "2px",
-                    cursor: "pointer",
-                    height: "15px",
-                    width: "15px",
-                    position: "absolute",
-                    top: "5px",
-                    right: "5px",
-                    fontSize: "16px",
-                    textAlign: "center",
-                    lineHeight: "15px",
-                    background: "#CCC"
-                }) );
-        }
-    }
-
-    /** Builds a method that calls a method and returns an element */
-    function buildElemAccessor( builder ) {
-        return function () {
-            return builder().elem;
-        };
-    }
-
-
-    /**
-     * Displays a modal
-     */
-    function picoModal(options) {
-
-        if ( isString(options) || isNode(options) ) {
-            options = { content: options };
-        }
-
-        var afterCreateEvent = observable();
-        var beforeShowEvent = observable();
-        var afterShowEvent = observable();
-        var beforeCloseEvent = observable();
-        var afterCloseEvent = observable();
-
-        /**
-         * Returns a named option if it has been explicitly defined. Otherwise,
-         * it returns the given default value
-         */
-        function getOption ( opt, defaultValue ) {
-            var value = options[opt];
-            if ( typeof value === "function" ) {
-                value = value( defaultValue );
-            }
-            return value === undefined ? defaultValue : value;
-        }
-
-        /** Hides this modal */
-        function forceClose () {
-            shadowElem().hide();
-            modalElem().hide();
-            afterCloseEvent.trigger(iface);
-        }
-
-        /** Gracefully hides this modal */
-        function close () {
-            if ( beforeCloseEvent.trigger(iface) ) {
-                forceClose();
-            }
-        }
-
-        /** Wraps a method so it returns the modal interface */
-        function returnIface ( callback ) {
-            return function () {
-                callback.apply(this, arguments);
-                return iface;
-            };
-        }
-
-
-        // The constructed dom nodes
-        var built;
-
-        /** Builds a method that calls a method and returns an element */
-        function build ( name ) {
-            if ( !built ) {
-                var modal = buildModal(getOption, close);
-                built = {
-                    modal: modal,
-                    overlay: buildOverlay(getOption, close),
-                    close: buildClose(modal, getOption)
-                };
-                afterCreateEvent.trigger(iface);
-            }
-            return built[name];
-        }
-
-        var modalElem = build.bind(window, 'modal');
-        var shadowElem = build.bind(window, 'overlay');
-        var closeElem = build.bind(window, 'close');
-
-
-        var iface = {
-
-            /** Returns the wrapping modal element */
-            modalElem: buildElemAccessor(modalElem),
-
-            /** Returns the close button element */
-            closeElem: buildElemAccessor(closeElem),
-
-            /** Returns the overlay element */
-            overlayElem: buildElemAccessor(shadowElem),
-
-            /** Shows this modal */
-            show: function () {
-                if ( beforeShowEvent.trigger(iface) ) {
-                    shadowElem().show();
-                    closeElem();
-                    modalElem().show();
-                    afterShowEvent.trigger(iface);
-                }
-                return this;
-            },
-
-            /** Hides this modal */
-            close: returnIface(close),
-
-            /**
-             * Force closes this modal. This will not call beforeClose
-             * events and will just immediately hide the modal
-             */
-            forceClose: returnIface(forceClose),
-
-            /** Destroys this modal */
-            destroy: function () {
-                modalElem = modalElem().destroy();
-                shadowElem = shadowElem().destroy();
-                closeElem = undefined;
-            },
-
-            /**
-             * Updates the options for this modal. This will only let you
-             * change options that are re-evaluted regularly, such as
-             * `overlayClose`.
-             */
-            options: function ( opts ) {
-                options = opts;
-            },
-
-            /** Executes after the DOM nodes are created */
-            afterCreate: returnIface(afterCreateEvent.watch),
-
-            /** Executes a callback before this modal is closed */
-            beforeShow: returnIface(beforeShowEvent.watch),
-
-            /** Executes a callback after this modal is shown */
-            afterShow: returnIface(afterShowEvent.watch),
-
-            /** Executes a callback before this modal is closed */
-            beforeClose: returnIface(beforeCloseEvent.watch),
-
-            /** Executes a callback after this modal is closed */
-            afterClose: returnIface(afterCloseEvent.watch)
-        };
-
-        return iface;
-    }
-
-    window.picoModal = picoModal;
-}(window, document));
-
-
 var dbg = (typeof console !== 'undefined') ? function(s) {
     // console.log("Readability: " + s);
-    console.log.apply(console, arguments);
+    // console.log.apply(console, arguments);
 } : function() {};
 
 var info = (typeof console !== 'undefined') ? function() {
     console.info.apply(console,  arguments);
 } : function() {};
 
+var dir = (typeof console !== 'undefined') ? function() {
+    console.dir.apply(console,  arguments);
+} : function() {};
 
 var readability = {
-    version: '1.8.0',
-    // iframeLoads: 0,
     convertLinksToFootnotes: true,
-    // reversePageScroll: false,
-    /* If they hold shift and hit space, scroll up */
-    // frameHack: false,
-    /**
-     * The frame hack is to workaround a firefox bug where if you
-     * pull content out of a frame and stick it into the parent element, the scrollbar won't appear.
-     * So we fake a scrollbar in the wrapping div.
-     **/
     biggestFrame: false,
     wholePageCache: null,
     bodyCache: null,
-    /* Cache the body HTML in case we need to re-use it later */
     flags: 0x1 | 0x2 | 0x4,
     /* Start with all flags set. */
 
@@ -482,7 +82,8 @@ var readability = {
         /**
          * Don't use this on root page (NOT UNIVERSAL)
          **/
-        if (/\b(google|facebook|twitter|quizlet|dropbox)\b/i.test(window.document.location.hostname)) return null;
+        info("Started Readability~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" );
+        if (/\b(google|facebook|twitter|dropbox|quizlet|youtube)\b/i.test(window.document.location.hostname)) return null;
         if (localStorage.getItem("lens-user-never-again-GH3UEgL6CbcpK4hNtQeR8Fc") === "n") return null;
 
         // readability.flags = localStorage.getItem("lens-flag-GH3UEgL6CbcpK4hNtQeR8Fc") || readability.flags;
@@ -509,21 +110,13 @@ var readability = {
             return null;
         }
 
-        info("Started Readability~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" );
-        readability.prepDocument();
+        readability.createBodyIfNeeded();
         
         if(document.body && !readability.bodyCache) {
             readability.wholePageCache = document.cloneNode(true);
             readability.wholePageCache.normalize();
             readability.bodyCache = readability.wholePageCache.querySelector("body");
         }
-
-
-        // if (! readability.regexps.likelyURLpath.test(window.document.location.pathname)) {
-        //     dbg("unlikely URLpath");
-        //     return null;
-        // }
-
 
         readability.removeScripts(readability.wholePageCache);
 
@@ -546,61 +139,42 @@ var readability = {
             styles[i].lensDisabled = true;
         }
 
-
         var articleFooter = readability.getArticleFooter();
         readability.readFooter = articleFooter;
-        // TODO: Expand This to return if we only selected less than 80% of the page.
 
         /* Build readability's DOM tree */
-        var style = document.createElement("STYLE");
-        style.type = "text/css";
-        styleText = document.createTextNode('img {max-width: 100% !important; } body, td, input, select, textarea, button {color: hsl(273, 10%, 20%) !important; } h1 {font-size: 1.25em !important; } h2 {font-size: 1.125em !important; } h3 {font-size: 1.05em !important; } a {text-decoration: none !important; color: #35C !important; } a:hover {text-decoration: underline !important; background-color: #fafafa !important; } blockquote {border-left: 5px solid #eaeef1 !important; color: #555 !important; margin-left: 0px !important; margin-right: 0px !important; padding: 0px 20px !important; } hr {height: 0px !important; border: none !important; border-top: 1px solid #ddd !important; } br {clear: left !important; } #article {display: inline-block !important; font: 19px Georgia, Times, "Times New Roman", serif !important; line-height: 160% !important; text-align: justify !important; text-shadow: none !important; } #article.rtl {direction: rtl !important; text-align: right !important; } .page {border: 1px solid #C3C3C3 !important; background-color: #fdfdfd !important; padding: 45px 70px !important; margin: 12px 12px 0px 12px !important; -webkit-user-select: auto !important; } .page:first-of-type {margin-top: 20px !important; } .page:last-of-type {margin-bottom: 20px !important; } .page table {font-size: 0.9em !important; text-align: left !important; } .page.rtl table {text-align: right !important; } #title {display: none !important; font-weight: bold !important; font-size: 1.33em !important; line-height: 1.25em !important; margin-bottom: 1.5em !important; /*opt*/ padding: 45px 70px !important; /*opt*/ padding-bottom: 0px !important; } .page:first-of-type #title {display: block !important; } .content {word-wrap: break-word !important; } .content pre, .content xmp, .content plaintext, .content listing {/*opt*/ white-space: normal !important; } .content pre, .content code {border: 1px dashed #d3c8cf !important; border-left: 5px solid #f5edf2 !important; padding: 5px 5px 5px 10px !important; } .content img {float: left !important; margin: 12px 12px 12px 0px !important; max-width: 100% !important; height: auto !important; } .content.disableImages img {display: none  !important; } .content img.tinyImage {float: none !important; margin: 0 !important; } .content img.largeImage {float: none !important; margin: 1em auto !important; display: block !important; clear: both !important; } .content a img {border: none !important; } .content .float {margin: 8px 0 !important; font-size: 70% !important; line-height: 1.4 !important; text-align: left !important; } #article.rtl .content .float {text-align: right !important; } .content .float.left {float: left !important; margin-right: 20px !important; } .content .float.right {float: right !important; margin-left: 20px  !important; } .content .float.full-width {float: none !important; display: block !important; } ::-webkit-scrollbar:horizontal, ::-webkit-scrollbar-track:disabled {display: none !important; } ::-webkit-scrollbar-thumb {-webkit-border-image: url("https://i.imgur.com/JiF4KuF.png") 19 0 19 0 !important; border-width: 19px 0 !important; min-height: 40px !important; } ::-webkit-scrollbar-track {margin-top: 20px !important; margin-bottom: 20px !important; -webkit-border-image: url("https://i.imgur.com/wLYCOTH.png") 21 0 21 0 !important; border-width: 21px 0 !important; } ::-webkit-scrollbar {width: 21px !important; } @media print {body {background: #fff  !important; } #controls, .footer, .loader {display: none  !important; } #articleContainer {width: auto  !important; height: auto  !important; } #article, .page, .contentWrapper {border: none !important; margin: 0px  !important; padding: 0px  !important; font-size: 12pt !important; } .page {background: #fff  !important; } .page, a:link, a:visited {color: #000  !important; } a:link, a:visited {color: #520  !important; background: transparent !important; /*opt*/ text-decoration: underline !important; } .content a:link:after, .content a:visited:after {/*opt*/ content: " (" attr(href) ") " !important; font-size: 80% !important; color: #853  !important; } .page:last-of-type .articleInfo {display: block  !important; } .page .pageNumber {float: none !important; background: #fafafa !important; color: #000 !important; border: solid 2px #eee !important; border-left: none !important; border-right: none !important; border-radius: 0px !important; margin-top: 15px !important; margin-bottom: 15px !important; } }');
-        style.appendChild(styleText);
+        var style = document.createElement("LINK");
+        style.href = chrome.extension.getURL("/css/lens.css");
+        style.rel = "stylesheet";
         var body = document.createElement("DIV");
         body.id = "article";
         body.appendChild(articleTools);
 
+        /* Apply user-selected styling */
+        // readability.wholePageCache.dir = readability.getSuggestedDirection(articleTitle.innerHTML);
 
-        // /* Apply user-selected styling */
-        readability.wholePageCache.dir = readability.getSuggestedDirection(articleTitle.innerHTML);
-
-        if (typeof(readConvertLinksToFootnotes) !== 'undefined' && readConvertLinksToFootnotes === true) {
-            readability.convertLinksToFootnotes = true;
-        }
         readability.postProcessContent(articleContent);
 
         /* Glue the structure of our document together. */
-        // innerDiv.appendChild(articleTitle);
         var page = articleContent.firstChild;
         page.insertBefore(articleTitle, page.firstChild);
         body.appendChild(articleContent);
         articleContent.appendChild(articleFooter);
         articleFooter.classList.add("page");
-        // overlay.appendChild(articleTools);
-        // overlay.appendChild(innerDiv);
         body.appendChild(style);
 
-        // if (document.body.shadowRoot !== null){
-        //     readability.shadowCache = document.body.shadowRoot.innerHTML;
-        // }  
-        // var shadow = document.body.createShadowRoot();
-        // readability.dom = shadow;
-        // shadow.appendChild(body);
 
         document.body.style.visibility = "hidden";
         picoModal({
-            content: body,
-            overlayStyles: {
-                backgroundColor: 'white',
-                height: "100%",
-                width: "100%"
-                // opacity: 0.99
-            }
+            content: body
         }).afterClose(function(modal){
+            style.disabled = true;
             var styles = document.styleSheets;
             for (var i = 0; i< styles.length; i++){
                 if (styles[i].lensDisabled){
                     styles[i].disabled = false;
+                } else {
+                    styles[i].disabled = true;
                 }
             }
             document.body.style.visibility = "visible";
@@ -608,13 +182,8 @@ var readability = {
         }).afterShow(function(){
             window.scrollTo(0, 0);
             body.focus();
+            body.click();
         }).show();
-
-
-        /* If we're using the Typekit library, select the font */
-        // if (readStyle === "style-athelas" || readStyle === "style-apertura") {
-        //     readability.useRdbTypekit();
-        // }
 
         if (nextPageLink) {
             // * 
@@ -623,38 +192,8 @@ var readability = {
             //  *
             window.setTimeout(function() {
                 readability.appendNextPage(nextPageLink);
-            }, 500);
+            }, 0);
         }
-
-        // /** Smooth scrolling **/
-        // document.onkeydown = function(e) {
-        //     var code = (window.event) ? event.keyCode : e.keyCode;
-        //     if (code === 16) {
-        //         readability.reversePageScroll = true;
-        //         return;
-        //     }
-
-        //     if (code === 32) {
-        //         readability.curScrollStep = 0;
-        //         var windowHeight = window.innerHeight ? window.innerHeight : (document.documentElement.clientHeight ? document.documentElement.clientHeight : document.body.clientHeight);
-
-        //         if (readability.reversePageScroll) {
-        //             readability.scrollTo(readability.scrollTop(), readability.scrollTop() - (windowHeight - 50), 20, 10);
-        //         } else {
-        //             readability.scrollTo(readability.scrollTop(), readability.scrollTop() + (windowHeight - 50), 20, 10);
-        //         }
-
-        //         return false;
-        //     }
-        // };
-
-        // document.onkeyup = function(e) {
-        //     var code = (window.event) ? event.keyCode : e.keyCode;
-        //     if (code === 16) {
-        //         readability.reversePageScroll = false;
-        //         return;
-        //     }
-        // };
     },
 
     /**
@@ -664,11 +203,7 @@ var readability = {
      * @return void
      **/
     postProcessContent: function(articleContent) {
-        // debugger;
-
-        if (readability.convertLinksToFootnotes && !window.location.href.match(/wikipedia\.org/g)) {
-            readability.addFootnotes(articleContent);
-        }
+        readability.addFootnotes(articleContent);
 
         // readability.fixImageFloats(articleContent);
     },
@@ -681,7 +216,7 @@ var readability = {
      * @param Element
      * @return void
      **/
-    fixImageFloats: function(articleContent) {
+    // fixImageFloats: function(articleContent) {
         // var imageWidthThreshold = Math.min(articleContent.offsetWidth, 800) * 0.55,
         //     images = articleContent.getElementsByTagName('img');
 
@@ -692,7 +227,7 @@ var readability = {
         //         image.className += " blockImage";
         //     }
         // }
-    },
+    // },
 
     /**
      * Get the article tools Element that has buttons like reload, print, email.
@@ -701,7 +236,15 @@ var readability = {
      **/
     getArticleTools: function() {
         var articleTools = document.createElement("DIV");
-        articleTools.innerHTML = "";
+        articleTools.className = "tools";
+        var neverAgain = document.createElement("A");
+        neverAgain.className = "lensLink";
+        neverAgain.text = "Never on this Domain";
+
+        neverAgain.onclick = function(){
+            localStorage.setItem("lens-user-never-again-GH3UEgL6CbcpK4hNtQeR8Fc", "n");
+        };
+        articleTools.appendChild(neverAgain);
 
         return articleTools;
     },
@@ -711,27 +254,27 @@ var readability = {
      *
      * @return "rtl" || "ltr"
      **/
-    getSuggestedDirection: function(text) {
-        function sanitizeText() {
-            return text.replace(/@\w+/, "");
-        }
+    // getSuggestedDirection: function(text) {
+    //     function sanitizeText() {
+    //         return text.replace(/@\w+/, "");
+    //     }
 
-        function countMatches(match) {
-            var matches = text.match(new RegExp(match, "g"));
-            return matches !== null ? matches.length : 0;
-        }
+    //     function countMatches(match) {
+    //         var matches = text.match(new RegExp(match, "g"));
+    //         return matches !== null ? matches.length : 0;
+    //     }
 
-        function isRTL() {
-            var count_heb = countMatches("[\\u05B0-\\u05F4\\uFB1D-\\uFBF4]");
-            var count_arb = countMatches("[\\u060C-\\u06FE\\uFB50-\\uFEFC]");
+    //     function isRTL() {
+    //         var count_heb = countMatches("[\\u05B0-\\u05F4\\uFB1D-\\uFBF4]");
+    //         var count_arb = countMatches("[\\u060C-\\u06FE\\uFB50-\\uFEFC]");
 
-            // if 20% of chars are Hebrew or Arbic then direction is rtl
-            return (count_heb + count_arb) * 100 / text.length > 20;
-        }
+    //         // if 20% of chars are Hebrew or Arbic then direction is rtl
+    //         return (count_heb + count_arb) * 100 / text.length > 20;
+    //     }
 
-        text = sanitizeText(text);
-        return isRTL() ? "rtl" : "ltr";
-    },
+    //     text = sanitizeText(text);
+    //     return isRTL() ? "rtl" : "ltr";
+    // },
 
 
     /**
@@ -805,7 +348,7 @@ var readability = {
      *
      * @return void
      **/
-    prepDocument: function() {
+    createBodyIfNeeded: function() {
         /**
          * In some cases a body element can't be found (if the HTML is totally hosed for example)
          * so we create a new body node and append it to the document.
@@ -828,12 +371,8 @@ var readability = {
      * @return void
      **/
     addFootnotes: function(articleContent) {
-        
-
         var footnotesWrapper = readability['readability-footnotes'],
             articleFootnotes = readability['readability-footnotes-list'];
-
-
 
         if (!footnotesWrapper) {
             footnotesWrapper = document.createElement("DIV");
@@ -845,8 +384,6 @@ var readability = {
             articleFootnotes = document.createElement('ol');
             articleFootnotes.id = 'readability-footnotes-list';
             readability['readability-footnotes-list'] = articleFootnotes;
-
-
             footnotesWrapper.appendChild(articleFootnotes);
             readability.readFooter.appendChild(footnotesWrapper);
         }
@@ -861,7 +398,7 @@ var readability = {
                 linkDomain = footnoteLink.host ? footnoteLink.host : document.location.host,
                 linkText = readability.getInnerText(articleLink);
 
-            if (articleLink.className && articleLink.className.indexOf('readability-DoNotFootnote') !== -1 || linkText.match(readability.regexps.skipFootnoteLink)) {
+            if(articleLink.className && articleLink.className.indexOf('readability-DoNotFootnote') !== -1 || linkText.match(readability.regexps.skipFootnoteLink)) {
                 continue;
             }
 
@@ -902,63 +439,6 @@ var readability = {
         }
     },
 
-    // useRdbTypekit: function() {
-    //     var rdbHead = document.getElementsByTagName('head')[0];
-    //     var rdbTKScript = document.createElement('script');
-    //     var rdbTKCode = null;
-
-    //     var rdbTKLink = document.createElement('a');
-    //     rdbTKLink.setAttribute('class', 'rdbTK-powered');
-    //     rdbTKLink.setAttribute('title', 'Fonts by Typekit');
-    //     rdbTKLink.innerHTML = "Fonts by <span class='rdbTK'>Typekit</span>";
-
-    //     if (readStyle === "style-athelas") {
-    //         rdbTKCode = "sxt6vzy";
-    //         dbg("Using Athelas Theme");
-
-    //         rdbTKLink.setAttribute('href', 'http://typekit.com/?utm_source=readability&utm_medium=affiliate&utm_campaign=athelas');
-    //         rdbTKLink.setAttribute('id', 'rdb-athelas');
-    //         document.getElementById("rdb-footer-right").appendChild(rdbTKLink);
-    //     }
-    //     if (readStyle === "style-apertura") {
-    //         rdbTKCode = "bae8ybu";
-    //         dbg("Using Inverse Theme");
-
-    //         rdbTKLink.setAttribute('href', 'http://typekit.com/?utm_source=readability&utm_medium=affiliate&utm_campaign=inverse');
-    //         rdbTKLink.setAttribute('id', 'rdb-inverse');
-    //         document.getElementById("rdb-footer-right").appendChild(rdbTKLink);
-    //     }
-
-    //     /**
-    //      * Setting new script tag attributes to pull Typekits libraries
-    //      **/
-    //     rdbTKScript.setAttribute('type', 'text/javascript');
-    //     rdbTKScript.setAttribute('src', "http://use.typekit.com/" + rdbTKCode + ".js");
-    //     rdbTKScript.setAttribute('charset', 'UTF-8');
-    //     rdbHead.appendChild(rdbTKScript);
-
-    //     /**
-    //      * In the future, maybe try using the following experimental Callback function?:
-    //      * http://gist.github.com/192350
-    //      * &
-    //      * http://getsatisfaction.com/typekit/topics/support_a_pre_and_post_load_callback_function
-    //      **/
-    //     var typekitLoader = function() {
-    //         dbg("Looking for Typekit.");
-    //         if (typeof Typekit !== "undefined") {
-    //             try {
-    //                 dbg("Caught typekit");
-    //                 Typekit.load();
-    //                 clearInterval(window.typekitInterval);
-    //             } catch (e) {
-    //                 dbg("Typekit error: " + e);
-    //             }
-    //         }
-    //     };
-
-    //     window.typekitInterval = window.setInterval(typekitLoader, 100);
-    // },
-
     /**
      * Prepare the article node for display. Clean out any inline styles,
      * iframes, forms, strip extraneous <p> tags, etc.
@@ -972,8 +452,9 @@ var readability = {
 
         /* Clean out junk from the article content */
         readability.cleanConditionally(articleContent, "form");
-        readability.clean(articleContent, "object");
+        readability.cleanConditionally(articleContent, "input");
         readability.clean(articleContent, "h1");
+        // readability.clean(articleContent, "object");
 
         /**
          * If there is only one h2, they are probably using it
@@ -1003,11 +484,11 @@ var readability = {
             }
         }
 
-        try {
-            articleContent.innerHTML = articleContent.innerHTML.replace(/<br[^>]*>\s*<p/gi, '<p');
-        } catch (e) {
-            dbg("Cleaning innerHTML of breaks failed. This is an IE strict-block-elements bug. Ignoring.: " + e);
-        }
+        // try {
+        //     articleContent.innerHTML = articleContent.innerHTML.replace(/<br[^>]*>\s*<p/gi, '<p');
+        // } catch (e) {
+        //     dbg("Cleaning innerHTML of breaks failed. This is an IE strict-block-elements bug. Ignoring.: " + e);
+        // }
     },
 
     /**
@@ -1158,18 +639,6 @@ var readability = {
                     } catch (e) {
                         dbg("Could not alter div to p, probably an IE restriction, reverting back to div.: " + e);
                     }
-                } else {
-                    /* EXPERIMENTAL */
-                    // for (var i = 0, il = node.childNodes.length; i < il; i += 1) {
-                    //     var childNode = node.childNodes[i];
-                    //     if (childNode.nodeType === 3) { // Node.TEXT_NODE
-                    //         var p = document.createElement('p');
-                    //         p.innerHTML = childNode.nodeValue;
-                    //         p.style.display = 'inline';
-                    //         p.className = 'readability-styled';
-                    //         childNode.parentNode.replaceChild(p, childNode);
-                    //     }
-                    // }
                 }
             }
         }
@@ -1275,6 +744,8 @@ var readability = {
         if (isPaging) {
             articleContent.id = "readability-content";
         }
+
+        // IMPORTANT
         var siblingScoreThreshold = Math.max(10, topCandidate.readability.contentScore * 0.2);
         var siblingNodes = topCandidate.parentNode.childNodes;
 
@@ -1282,15 +753,6 @@ var readability = {
         for (var s = 0, sl = siblingNodes.length; s < sl; s += 1) {
             var siblingNode = siblingNodes[s];
             var append = false;
-
-            /**
-             * Fix for odd IE7 Crash where siblingNode does not exist even though this should be a live nodeList.
-             * Example of error visible here: http://www.esquire.com/features/honesty0707
-             **/
-            if (!siblingNode) {
-                continue;
-            }
-
             dbg("Looking at sibling node: " + siblingNode + " (" + siblingNode.className + ":" + siblingNode.id + ")" + ((typeof siblingNode.readability !== 'undefined') ? (" with score " + siblingNode.readability.contentScore) : ''));
             dbg("Sibling has score " + (siblingNode.readability ? siblingNode.readability.contentScore : 'Unknown'));
 
@@ -1312,7 +774,6 @@ var readability = {
                 var linkDensity = readability.getLinkDensity(siblingNode);
                 var nodeContent = readability.getInnerText(siblingNode);
                 var nodeLength = nodeContent.length;
-
                 if (nodeLength > 80 && linkDensity < 0.25) {
                     append = true;
                 } else if (nodeLength < 80 && linkDensity === 0 && nodeContent.search(/\.( |$)/) !== -1) {
@@ -1374,7 +835,7 @@ var readability = {
         });
         info("Article before, after, ratio: "+ beforeLength + ", " + afterLength + ", " + afterLength/beforeLength);
 
-        if (afterLength < 250 || afterLength/beforeLength < 0.65) {
+        if (afterLength < 1000 || afterLength/beforeLength < 0.65) {
             page.innerHTML = pageCacheHtml;
             // if (readability.flagIsActive(readability.FLAG_STRIP_UNLIKELYS)) {
             //     readability.removeFlag(readability.FLAG_STRIP_UNLIKELYS);
@@ -1642,6 +1103,8 @@ var readability = {
                 continue;
             }
             var editDistance = readability.getEditDistance(linkHref, articleBaseUrl);
+            // This may be a bad idea - for example consider links that pass parameters in the url for tracking purposes.
+            // Currently this is not a problem.
             if (editDistance > 15){
                 continue;
             }
@@ -1666,7 +1129,7 @@ var readability = {
                 linkObj.score -= 25;
             }
 
-            var linkData = linkText + ' ' + link.className + ' ' + link.id;
+            var linkData = ' '+ linkText + ' ' + link.className + ' ' + link.id;
             if (linkData.match(readability.regexps.nextLink)) {
                 linkObj.score += 50;
             }
@@ -1679,7 +1142,7 @@ var readability = {
                     linkObj.score -= 65;
                 }
             }
-            if (linkData.match(readability.regexps.negative) || linkData.match(readability.regexps.extraneous)) {
+            if (linkData.match(readability.regexps.negative)) {
                 linkObj.score -= 50;
             }
             if (linkData.match(readability.regexps.prevLink)) {
@@ -1747,7 +1210,6 @@ var readability = {
                 }
             }
         }
-
         /**
          * Loop thrugh all of our possible pages from above and find our top candidate for the next page URL.
          * Require at least a score of 50, which is a relatively high confidence that this page is the next link.
@@ -1763,7 +1225,6 @@ var readability = {
 
         if (topPage) {
             var nextHref = topPage.href.replace(/\/$/, '');
-
             info('NEXT PAGE IS ' + nextHref);
             readability.parsedPages[nextHref] = true;
             return nextHref;
@@ -1909,26 +1370,6 @@ var readability = {
                         return;
                     }
 
-                    /**
-                     * Anti-duplicate mechanism. Essentially, get the first paragraph of our new page.
-                     * Compare it against all of the the previous document's we've gotten. If the previous
-                     * document contains exactly the innerHTML of this first paragraph, it's probably a duplicate.
-                     **/
-                    // var firstP = content.getElementsByTagName("P").length ? content.getElementsByTagName("P")[0] : null;
-                    // if (firstP && firstP.innerHTML.length > 100) {
-                    //     for (var i = 1; i <= readability.curPageNum; i += 1) {
-                    //         var rPage = document.getElementById('readability-page-' + i);
-                    //         if (rPage && rPage.innerHTML.indexOf(firstP.innerHTML) !== -1) {
-                    //             dbg('Duplicate of page ' + i + ' - skipping.');
-                    //             articlePage.style.display = 'none';
-                    //             readability.parsedPages[pageUrl] = true;
-                    //             return;
-                    //         }
-                    //     }
-                    // }
-
-                    
-
                     thisPage.innerHTML = thisPage.innerHTML + content.innerHTML;
 
                     /**
@@ -1959,7 +1400,7 @@ var readability = {
      * @param Element
      * @return number (Integer)
      **/
-    getClassWeight: function(e) {
+    getClassWeight: function(element) {
         if (!readability.flagIsActive(readability.FLAG_WEIGHT_CLASSES)) {
             return 0;
         }
@@ -1967,23 +1408,23 @@ var readability = {
         var weight = 0;
 
         /* Look for a special classname */
-        if (typeof(e.className) === 'string' && e.className !== '') {
-            if (e.className.search(readability.regexps.negative) !== -1) {
+        if (typeof(element.className) === 'string' && element.className !== '') {
+            if (element.className.search(readability.regexps.negative) !== -1) {
                 weight -= 25;
             }
 
-            if (e.className.search(readability.regexps.positive) !== -1) {
+            if (element.className.search(readability.regexps.positive) !== -1) {
                 weight += 25;
             }
         }
 
         /* Look for a special ID */
-        if (typeof(e.id) === 'string' && e.id !== '') {
-            if (e.id.search(readability.regexps.negative) !== -1) {
+        if (typeof(element.id) === 'string' && element.id !== '') {
+            if (element.id.search(readability.regexps.negative) !== -1) {
                 weight -= 25;
             }
 
-            if (e.id.search(readability.regexps.positive) !== -1) {
+            if (element.id.search(readability.regexps.positive) !== -1) {
                 weight += 25;
             }
         }
