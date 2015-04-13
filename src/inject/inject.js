@@ -835,7 +835,7 @@ var readability = {
         });
         info("Article before, after, ratio: "+ beforeLength + ", " + afterLength + ", " + afterLength/beforeLength);
 
-        if (afterLength < 1000 || afterLength/beforeLength < 0.65) {
+        if (afterLength < 1000 || afterLength/beforeLength < 0.60) {
             page.innerHTML = pageCacheHtml;
             // if (readability.flagIsActive(readability.FLAG_STRIP_UNLIKELYS)) {
             //     readability.removeFlag(readability.FLAG_STRIP_UNLIKELYS);
