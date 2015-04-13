@@ -1,13 +1,15 @@
 #Lens [beta]  
 
 
-Distraction free reading - (Contacts for your browser)  
+##Distraction free reading - (Contacts for your browser)  
 
 
 [![Lens Screencast](http://img.youtube.com/vi/uOR86VW5_J8/0.jpg)](http://www.youtube.com/watch?v=uOR86VW5_J8)
 
-**[Screencast](http://www.youtube.com/watch?v=uOR86VW5_J8)   
-[Install the chrome extension here](https://chrome.google.com/webstore/detail/lens-beta/gklapfnodifcfcfcclbpeabnpgneehml)**
+[Screencast](http://www.youtube.com/watch?v=uOR86VW5_J8)   
+
+
+## [Install the chrome extension here](https://chrome.google.com/webstore/detail/lens-beta/gklapfnodifcfcfcclbpeabnpgneehml)**
 
 
 Lens is a chrome extension that allows you to minimize distractions on a webpage. It cleans up a webpage showing you the main content.
