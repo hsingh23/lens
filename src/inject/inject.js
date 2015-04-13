@@ -83,7 +83,7 @@ var readability = {
          * Don't use this on root page (NOT UNIVERSAL)
          **/
         info("Started Readability~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" );
-        if (/\b(google|facebook|twitter|dropbox|quizlet|youtube)\b/i.test(window.document.location.hostname)) return null;
+        if (/\b(google.com|facebook.com|twitter.com|dropbox.com|quizlet|youtube.com|amazon.com)\b/i.test(window.document.location.hostname)) return null;
         if (localStorage.getItem("lens-user-never-again-GH3UEgL6CbcpK4hNtQeR8Fc") === "n") return null;
 
         // readability.flags = localStorage.getItem("lens-flag-GH3UEgL6CbcpK4hNtQeR8Fc") || readability.flags;
@@ -133,6 +133,7 @@ var readability = {
             info("no article");
             return;
         }
+        readability["readability-content"] = articleContent;
         var styles = document.styleSheets;
         for (var i = 0; i< styles.length; i++){
             styles[i].disabled = true;
@@ -468,21 +469,22 @@ var readability = {
         readability.cleanHeaders(articleContent);
 
         /* Do these last as the previous stuff may have removed junk that will affect these */
-        readability.cleanConditionally(articleContent, "table");
+        // readability.cleanConditionally(articleContent, "table");
         readability.cleanConditionally(articleContent, "ul");
         readability.cleanConditionally(articleContent, "div");
 
         /* Remove extra paragraphs */
-        var articleParagraphs = articleContent.getElementsByTagName('p');
-        for (var i = articleParagraphs.length - 1; i >= 0; i -= 1) {
-            var imgCount = articleParagraphs[i].getElementsByTagName('img').length;
-            var embedCount = articleParagraphs[i].getElementsByTagName('embed').length;
-            var objectCount = articleParagraphs[i].getElementsByTagName('object').length;
+        // var articleParagraphs = articleContent.getElementsByTagName('p');
+        // for (var i = articleParagraphs.length - 1; i >= 0; i -= 1) {
+        //     var imgCount = articleParagraphs[i].getElementsByTagName('img').length;
+        //     var embedCount = articleParagraphs[i].getElementsByTagName('embed').length;
+        //     var objectCount = articleParagraphs[i].getElementsByTagName('object').length;
 
-            if (imgCount === 0 && embedCount === 0 && objectCount === 0 && readability.getInnerText(articleParagraphs[i], false) === '') {
-                articleParagraphs[i].parentNode.removeChild(articleParagraphs[i]);
-            }
-        }
+        //     if (imgCount === 0 && embedCount === 0 && objectCount === 0 && readability.getInnerText(articleParagraphs[i], false) === '') {
+        //         console.trace("Removing %o", articleParagraphs[i]);
+        //         articleParagraphs[i].parentNode.removeChild(articleParagraphs[i]);
+        //     }
+        // }
 
         // try {
         //     articleContent.innerHTML = articleContent.innerHTML.replace(/<br[^>]*>\s*<p/gi, '<p');
@@ -740,10 +742,7 @@ var readability = {
          * Things like preambles, content split by ads that we removed, etc.
          **/
         var articleContent = document.createElement("DIV");
-        readability["readability-content"] = articleContent;
-        if (isPaging) {
-            articleContent.id = "readability-content";
-        }
+
 
         // IMPORTANT
         var siblingScoreThreshold = Math.max(10, topCandidate.readability.contentScore * 0.2);
@@ -1309,7 +1308,9 @@ var readability = {
         articlePage.className = 'page';
         articlePage.innerHTML = '<div><p class="page-separator" title="Page ' + readability.curPageNum + '"></p>';
 
+        
         readability["readability-content"].insertBefore(articlePage, readability["readability-content"].lastChild);
+
 
 
         if (readability.curPageNum > readability.maxPages) {
@@ -1318,6 +1319,7 @@ var readability = {
             articlePage.innerHTML = articlePage.innerHTML + nextPageMarkup;
             return;
         }
+
 
         /**
          * Now that we've built the article page DOM element, get the page content
@@ -1369,21 +1371,16 @@ var readability = {
                         info("No content found in page to append. Aborting. "+ pageUrl);
                         return;
                     }
-
-                    thisPage.innerHTML = thisPage.innerHTML + content.innerHTML;
-
+                    thisPage.appendChild(content);
                     /**
                      * After the page has rendered, post process the content. This delay is necessary because,
                      * in webkit at least, offsetWidth is not set in time to determine image width. We have to
                      * wait a little bit for reflow to finish before we can fix floating images.
                      **/
-                    window.setTimeout(
-                        function() {
+                    window.setTimeout(function() {
                             readability.postProcessContent(thisPage);
                             dbg("CALLED POST PROCESS");
-                        },
-                        500
-                    );
+                        }, 0);
 
                     if (nextPageLink) {
                         readability.appendNextPage(nextPageLink);
