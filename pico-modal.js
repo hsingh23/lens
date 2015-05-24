@@ -1,7 +1,19 @@
 // PICO MODAL
 (function(window, document) {
     "use strict";
-
+    var findHighestZIndex = function(elem) {
+      var elems = document.querySelector(elem);
+      var highest = 0;
+      for (var i = 0; i < elems.length; i++)
+      {
+        var zindex=document.defaultView.getComputedStyle(elems[i],null).getPropertyValue("z-index");
+        if ((zindex > highest) && (zindex != 'auto'))
+        {
+          highest = zindex;
+        }
+      }
+      return highest;
+    };
     /** Returns whether a value is a dom node */
     function isNode(value) {
         if ( typeof Node === "object" ) {
@@ -159,11 +171,11 @@
                 height: "100%",
                 width: "100%",
                 visibility: "visible",
-                zIndex: "2000000000"
+                zIndex: findHighestZIndex("body")+1
             })
             .stylize(getOption('overlayStyles', {
                 opacity: 1,
-                background: "white"
+                background: "rgba(0,0,0,.9)"
             }))
             .onClick(function () {
                 if ( getOption('overlayClose', true) ) {
@@ -183,7 +195,7 @@
                 height: "calc(100% - 10px)",
                 overflow: "auto",
                 visibility: "visible",
-                zIndex: "9000000000",
+                zIndex: findHighestZIndex("body")+2,
                 left: "50%",
                 top: "0",
                 "min-width": "85%",

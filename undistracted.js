@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         Lens
+// @name         Undistracted
 // @namespace    http://your.homepage/
 // @version      0.2
 // @description  Read the article, and get on with your life.
@@ -8,17 +8,21 @@
 // @grant        none
 // @noframe
 // ==/UserScript==
-
-var dbg = (typeof console !== 'undefined') ? function(s) {
+var DBG = true;
+var dbg = (DBG === true && typeof console !== 'undefined') ? function(s) {
     // console.log("Readability: " + s);
-    // console.log.apply(console, arguments);
+    console.log.apply(console, arguments);
 } : function() {};
 
-var info = (typeof console !== 'undefined') ? function() {
+var info = (DBG === true&& typeof console !== 'undefined') ? function() {
     console.info.apply(console,  arguments);
 } : function() {};
 
-var dir = (typeof console !== 'undefined') ? function() {
+var trace = (DBG === true&& typeof console !== 'undefined') ? function() {
+    console.trace.apply(console,  arguments);
+} : function() {};
+
+var dir = (DBG === true && typeof console !== 'undefined') ? function() {
     console.dir.apply(console,  arguments);
 } : function() {};
 
@@ -48,9 +52,9 @@ var readability = {
      **/
     regexps: {
         unlikelyCandidates: /combx|comment|community|disqus|extra|foot|header|menu|remark|rss|shoutbox|sidebar|sponsor|ad-break|agegate|pagination|pager|popup|tweet|twitter|aside|nocontent/i,
-        okMaybeItsACandidate: /and|article|body|column|main|shadow|canvas|svg/i,
+        okMaybeItsACandidate: /and|article|body|column|main|shadow|canvas|svg|figure/i,
         stripFromText: /img|a/i,
-        positive: /article|body|content|entry|hentry|main|page|pagination|post|text|blog|story|code|svg|canvas/i,
+        positive: /article|body|content|entry|hentry|main|page|pagination|post|text|blog|story|code|svg|canvas|figure/i,
         negative: /combx|comment|com-|contact|header|foot|footer|footnote|masthead|meta|outbrain|promo|related|scroll|shoutbox|sidebar|sponsor|shopping|tags|tool|widget|nocontent|share|bookmark/i,
         extraneous: /print|archive|comment|discuss|e[\-]?mail|share|reply|all|login|sign|single/i,
         divToPElements: /<(a|blockquote|dl|div|img|ol|p|pre|table|ul)/i,
@@ -66,6 +70,7 @@ var readability = {
         likelyURLpath: /[-_]/
     },
     nextPageLink: null,
+
     /**
      * Runs readability.
      *
@@ -83,7 +88,7 @@ var readability = {
          * Don't use this on root page (NOT UNIVERSAL)
          **/
         info("Started Readability~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~" );
-        if (/\b(google.com|facebook.com|twitter.com|dropbox.com|quizlet|youtube.com|amazon.com)\b/i.test(window.document.location.hostname)) return null;
+        if (/\b(google.com|facebook.com|twitter.com|dropbox.com|quizlet.com|youtube.com|amazon.com)\b/i.test(window.document.location.hostname)) return null;
         if (localStorage.getItem("lens-user-never-again-GH3UEgL6CbcpK4hNtQeR8Fc") === "n") return null;
 
         // readability.flags = localStorage.getItem("lens-flag-GH3UEgL6CbcpK4hNtQeR8Fc") || readability.flags;
@@ -130,14 +135,21 @@ var readability = {
         var articleTitle = readability.getArticleTitle();
         var articleContent = readability.grabArticle(readability.bodyCache);
         if (!articleContent) {
-            info("no article");
+            info("unable to extract main content");
             return;
         }
+
+        // Clean memory
+        readability.bodyCache.innerHTML = "";
+        readability.bodyCache = null;
+        readability.wholePageCache.innerHTML = "";
+        readability.wholePageCache = null;
+
         readability["readability-content"] = articleContent;
         var styles = document.styleSheets;
         for (var i = 0; i< styles.length; i++){
             styles[i].disabled = true;
-            styles[i].lensDisabled = true;
+            styles[i].ownerNode.dataset.lensDisabled = true;
         }
 
         var articleFooter = readability.getArticleFooter();
@@ -147,9 +159,14 @@ var readability = {
         var style = document.createElement("LINK");
         style.href = chrome.extension.getURL("/css/lens.css");
         style.rel = "stylesheet";
+
+        // var style = document.createElement("style");
+        // style.type = "text/css";
+        // style.innerHTML = '.lensLink {box-sizing: border-box; color: rgba(0, 0, 0, 0.439216); cursor: pointer; display: inline-block; height: 38px; letter-spacing: -0.280000001192093px; position: relative; text-align: center; text-decoration: none; background-color:white; text-rendering: optimizeLegibility; vertical-align: middle; white-space: nowrap; -webkit-perspective-origin: 50% 50%; -moz-perspective-origin: 50% 50%; -o-perspective-origin: 50% 50%; perspective-origin: 50% 50%; -webkit-transform-origin: 50% 50%; -moz-transform-origin: 50% 50%; -o-transform-origin: 50% 50%; -ms-transform-origin: 50% 50%; transform-origin: 50% 50%; border: 1px solid rgba(0, 0, 0, 0.14902); border-radius: 13986px 13986px 13986px 13986px; font: normal normal normal normal 14px/37px "Lucida Grande", "Lucida Sans Unicode", "Lucida Sans", Geneva, Verdana, sans-serif; margin: 0 8px 0 0; outline: rgba(0, 0, 0, 0.439216) none 0; padding: 0 16px; transition: border-color 0.1s ease 0s, color 0.1s ease 0s; } .tools{padding: 10px 10px; padding-bottom: 0; } .lensLink:focus, .lensLink:active, .lensLink:hover {color: rgba(0,0,0,0.6); border-color: rgba(0,0,0,0.3); } img {max-width: 100%; } body, td, input, select, textarea, button {color: hsl(273, 10%, 20%); } h1 {font-size: 1.25em; } h2 {font-size: 1.125em; } h3 {font-size: 1.05em; } a {text-decoration: none; color: #35C; } a:hover {text-decoration: underline; background-color: #fafafa; } blockquote {border-left: 5px solid #eaeef1; color: #555; margin-left: 0; margin-right: 0; padding: 0 20px; } hr {height: 0px; border: none; border-top: 1px solid #ddd; } br {clear: left; } #article {display: inline-block; font: 19px Georgia, Times, "Times New Roman", serif; line-height: 160%; text-align: justify; text-shadow: none; } #article.rtl {direction: rtl; text-align: right; } .page {border: 1px solid #C3C3C3; background-color: #fdfdfd; padding: 45px 70px; margin: 12px 12px 0 12px; -webkit-user-select: auto; } .page:first-of-type {margin-top: 20px; } .page:last-of-type {margin-bottom: 20px; } .page table {font-size: 0.9em; text-align: left; } .page.rtl table {text-align: right; } #title {display: none; font-weight: bold; font-size: 1.33em; line-height: 1.25em; margin-bottom: 1.5em; padding: 45px 70px; padding-bottom: 0; } .page:first-of-type #title {display: block; } .content {word-wrap: break-word; } .content pre, .content xmp, .content plaintext, .content listing {white-space: normal; } .content pre, .content code {border: 1px dashed #d3c8cf; border-left: 5px solid #f5edf2; padding: 5px 5px 5px 10px; } .content img {float: left; margin: 12px 12px 12px 0px; max-width: 100%; height: auto; } .content.disableImages img {display: none !important; } .content .tinyImage {float: none; margin: 0; } .content .largeImage {float: none; margin: 1em auto; display: block; clear: both; /*-webkit-box-shadow: rgba(0, 0, 0, 0.05) 0px 0px 20px;*/; } .content a img {border: none; } .content .float {margin: 8px 0; font-size: 70%; line-height: 1.4; text-align: left; } #article.rtl .content .float {text-align: right; } .content .float.left {float: left; margin-right: 20px; } .content .float.right {float: right; margin-left: 20px !important; } .content .float.full-width {float: none; display: block; } ::-webkit-scrollbar:horizontal, ::-webkit-scrollbar-track:disabled {display: none; } ::-webkit-scrollbar-thumb {-webkit-border-image: url("https://i.imgur.com/JiF4KuF.png") 19 0 19 0; /*-webkit-border-image: url("chrome-extension://__MSG_@@extension_id__/assets/images/scrollbar-thumb.png") 19 0 19 0;*/ border-width: 19px 0; min-height: 40px; } ::-webkit-scrollbar-track {margin-top: 20; margin-bottom: 20; -webkit-border-image: url("https://i.imgur.com/wLYCOTH.png") 21 0 21 0; /*-webkit-border-image: url("chrome-extension://__MSG_@@extension_id__/assets/images/scrollbar-track.png") 21 0 21 0;*/ border-width: 21px 0; } ::-webkit-scrollbar {width: 21px; } @media print {body {background: #fff !important; } #controls, .footer, .loader {display: none !important; } #articleContainer {width: auto !important; height: auto !important; } #article, .page, .contentWrapper {border: none; margin: 0 ; padding: 0 ; font-size: 12pt; } .page {background: #fff !important; } .page, a:link, a:visited {color: #000 !important; } a:link, a:visited {color: #520 !important; background: transparent; text-decoration: underline; } .content a:link:after, .content a:visited:after {/*opt*/content: " (" attr(href) ") "; font-size: 80%; color: #853 !important; } .page:last-of-type .articleInfo {display: block !important; } .page .pageNumber {float: none; background: #fafafa; color: #000; border: solid 2px #eee; border-left: none; border-right: none; border-radius: 0px; margin-top: 15px; margin-bottom: 15px; } }';
+
         var body = document.createElement("DIV");
         body.id = "article";
-        body.appendChild(articleTools);
+        body.appendChild(style);
 
         /* Apply user-selected styling */
         // readability.wholePageCache.dir = readability.getSuggestedDirection(articleTitle.innerHTML);
@@ -159,26 +176,28 @@ var readability = {
         /* Glue the structure of our document together. */
         var page = articleContent.firstChild;
         page.insertBefore(articleTitle, page.firstChild);
+        page.insertBefore(articleTools, page.firstChild);
         body.appendChild(articleContent);
         articleContent.appendChild(articleFooter);
         articleFooter.classList.add("page");
-        body.appendChild(style);
-
-
+        var oldBodyOverflow = document.body.style.overflow;
         document.body.style.visibility = "hidden";
+        document.body.style.overflow = "hidden";
         picoModal({
-            content: body
+            content: body,
+            closeButton: false
         }).afterClose(function(modal){
             style.disabled = true;
             var styles = document.styleSheets;
             for (var i = 0; i< styles.length; i++){
-                if (styles[i].lensDisabled){
+                if (styles[i].ownerNode.dataset.lensDisabled){
                     styles[i].disabled = false;
                 } else {
                     styles[i].disabled = true;
                 }
             }
             document.body.style.visibility = "visible";
+            document.body.style.overflow = oldBodyOverflow;
             modal.destroy();
         }).afterShow(function(){
             window.scrollTo(0, 0);
@@ -238,13 +257,19 @@ var readability = {
     getArticleTools: function() {
         var articleTools = document.createElement("DIV");
         articleTools.className = "tools";
+        var close = document.createElement("A");
+        close.className = "pico-close lensLink ";
+        close.text = "Close";
+
         var neverAgain = document.createElement("A");
         neverAgain.className = "lensLink";
         neverAgain.text = "Never on this Domain";
-
         neverAgain.onclick = function(){
             localStorage.setItem("lens-user-never-again-GH3UEgL6CbcpK4hNtQeR8Fc", "n");
+            close.click();
         };
+
+        articleTools.appendChild(close);
         articleTools.appendChild(neverAgain);
 
         return articleTools;
@@ -473,24 +498,6 @@ var readability = {
         readability.cleanConditionally(articleContent, "ul");
         readability.cleanConditionally(articleContent, "div");
 
-        /* Remove extra paragraphs */
-        // var articleParagraphs = articleContent.getElementsByTagName('p');
-        // for (var i = articleParagraphs.length - 1; i >= 0; i -= 1) {
-        //     var imgCount = articleParagraphs[i].getElementsByTagName('img').length;
-        //     var embedCount = articleParagraphs[i].getElementsByTagName('embed').length;
-        //     var objectCount = articleParagraphs[i].getElementsByTagName('object').length;
-
-        //     if (imgCount === 0 && embedCount === 0 && objectCount === 0 && readability.getInnerText(articleParagraphs[i], false) === '') {
-        //         console.trace("Removing %o", articleParagraphs[i]);
-        //         articleParagraphs[i].parentNode.removeChild(articleParagraphs[i]);
-        //     }
-        // }
-
-        // try {
-        //     articleContent.innerHTML = articleContent.innerHTML.replace(/<br[^>]*>\s*<p/gi, '<p');
-        // } catch (e) {
-        //     dbg("Cleaning innerHTML of breaks failed. This is an IE strict-block-elements bug. Ignoring.: " + e);
-        // }
     },
 
     /**
@@ -662,9 +669,10 @@ var readability = {
          **/
         var candidates = [];
         for (var pt = 0; pt < nodesToScore.length; pt += 1) {
-            var parentNode = nodesToScore[pt].parentNode;
+            node = nodesToScore[pt];
+            var parentNode = node.parentNode;
             var grandParentNode = parentNode ? parentNode.parentNode : null;
-            var innerText = readability.getInnerText(nodesToScore[pt]);
+            var innerText = readability.getInnerText(node);
 
             if (!parentNode || typeof(parentNode.tagName) === 'undefined') {
                 continue;
@@ -672,6 +680,7 @@ var readability = {
 
             /* If this paragraph is less than 25 characters, don't even count it. */
             if (innerText.length < 25) {
+                // dbg("paragraph not scored %o", node);
                 continue;
             }
 
@@ -748,13 +757,10 @@ var readability = {
         var siblingScoreThreshold = Math.max(10, topCandidate.readability.contentScore * 0.2);
         var siblingNodes = topCandidate.parentNode.childNodes;
 
-
+        // TODO: Is it useful to filter the sibling of top candidate?
         for (var s = 0, sl = siblingNodes.length; s < sl; s += 1) {
             var siblingNode = siblingNodes[s];
             var append = false;
-            dbg("Looking at sibling node: " + siblingNode + " (" + siblingNode.className + ":" + siblingNode.id + ")" + ((typeof siblingNode.readability !== 'undefined') ? (" with score " + siblingNode.readability.contentScore) : ''));
-            dbg("Sibling has score " + (siblingNode.readability ? siblingNode.readability.contentScore : 'Unknown'));
-
             if (siblingNode === topCandidate) {
                 append = true;
             }
@@ -781,8 +787,6 @@ var readability = {
             }
 
             if (append) {
-                dbg("Appending node: " + siblingNode);
-
                 var nodeToAppend = null;
                 if (siblingNode.nodeName !== "DIV" && siblingNode.nodeName !== "P") {
                     /* We have a node that isn't a common block level element, like a form or td tag. Turn it into a div so it doesn't get filtered out later by accident. */
@@ -804,11 +808,10 @@ var readability = {
                     sl -= 1;
                 }
 
-                /* To ensure a node does not interfere with readability styles, remove its classnames */
-                nodeToAppend.className = "";
-
                 /* Append sibling and subtract from our list because it removes the node when you append to another node */
                 articleContent.appendChild(nodeToAppend);
+            } else {
+                dbg("Sibling not appended: %o has score %s with threshold", siblingNode, (siblingNode.readability ? siblingNode.readability.contentScore : 'Unknown'), siblingScoreThreshold);
             }
         }
 
@@ -818,7 +821,7 @@ var readability = {
         readability.prepArticle(articleContent);
 
         if (readability.curPageNum === 1) {
-            articleContent.innerHTML = '<div id="readability-page-1" class="page">' + articleContent.innerHTML + '</div>';
+            articleContent.innerHTML = '<div id="readability-page-1" class="page"><div class="content">' + articleContent.innerHTML + '</div></div>';
         }
 
         /**
@@ -834,7 +837,7 @@ var readability = {
         });
         info("Article before, after, ratio: "+ beforeLength + ", " + afterLength + ", " + afterLength/beforeLength);
 
-        if (afterLength < 1000 || afterLength/beforeLength < 0.60) {
+        if (afterLength < 900 || afterLength/beforeLength < 0.50) {
             page.innerHTML = pageCacheHtml;
             // if (readability.flagIsActive(readability.FLAG_STRIP_UNLIKELYS)) {
             //     readability.removeFlag(readability.FLAG_STRIP_UNLIKELYS);
@@ -1502,20 +1505,18 @@ var readability = {
          * Gather counts for other typical elements embedded within.
          * Traverse backwards so we can remove nodes at the same time without effecting the traversal.
          *
-         * TODO: Consider taking into account original contentScore here.
          **/
         for (var i = curTagsLength - 1; i >= 0; i -= 1) {
             var curTag = tagsList[i];
             var weight = readability.getClassWeight(curTag);
             var contentScore = (typeof curTag.readability !== 'undefined') ? curTag.readability.contentScore : 0;
 
-            dbg("Cleaning Conditionally " + curTag + " (" + curTag.className + ":" + curTag.id + ")" + ((typeof curTag.readability !== 'undefined') ? (" with score " + curTag.readability.contentScore) : ''));
             if (weight + contentScore < 0){
-                info("The following tag has negative weight + content score and will be cleaned conditionally. Weight: " + weight + contentScore);
-                info(curTag);
-            }
-            if (weight + contentScore + 2 < 0) {
-                curTag.parentNode.removeChild(curTag);
+                info("%o has weight %d and contentScore %d which is NEGATIVE", curTag, weight, contentScore);
+                if (weight + contentScore + 2 < 0) {
+                    curTag.parentNode.removeChild(curTag);
+                    trace("So it is removed: %o",curTag);
+                }
             } else if (readability.getCharCount(curTag, ',') < 10) {
                 /**
                  * If there are not very many commas, and the number of
@@ -1540,19 +1541,24 @@ var readability = {
 
                 if (img > p && img > 1) {
                     toRemove = true;
-                    info("Cleaning  because img > p");
-                    info(curTag);
+                    trace("Removed: %o",curTag);
                 } else if (li > p && tag !== "ul" && tag !== "ol") {
+                    trace("Removed: %o",curTag);
                     toRemove = true;
                 } else if (input > Math.floor(p / 3)) {
+                    trace("Removed: %o",curTag);
                     toRemove = true;
                 } else if (contentLength < 25 && (img === 0 || img > 2)) {
+                    trace("Removed: %o",curTag);
                     toRemove = true;
                 } else if (weight < 25 && linkDensity > 0.2) {
+                    trace("Removed: %o",curTag);
                     toRemove = true;
                 } else if (weight >= 25 && linkDensity > 0.5) {
+                    trace("Removed: %o",curTag);
                     toRemove = true;
                 } else if ((embedCount === 1 && contentLength < 75) || embedCount > 1) {
+                    trace("Removed: %o",curTag);
                     toRemove = true;
                 }
 
